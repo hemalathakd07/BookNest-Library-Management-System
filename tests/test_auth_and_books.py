@@ -236,6 +236,89 @@ def test_student_cannot_update_or_delete_and_invalid_tokens_return_401(client, d
     assert expired.json()["detail"] == "Token has expired"
 
 
+def test_only_admin_can_register_staff(client, db):
+    register_user(client, "Ananya", "ananya@example.com")
+    student = auth_header(login(client, "ananya@example.com"))
+    add_staff_user(db, "librarian", "librarian@example.com")
+    librarian = auth_header(login(client, "librarian@example.com", "staffpass1"))
+    add_staff_user(db, "admin", "admin@example.com", name="Library Admin")
+    admin = auth_header(login(client, "admin@example.com", "staffpass1"))
+
+    librarian_body = {
+        "name": "New Librarian",
+        "email": "new.librarian@example.com",
+        "password": "library123",
+        "role": "librarian"
+    }
+    admin_body = {
+        "name": "New Admin",
+        "email": "new.admin@example.com",
+        "password": "library123",
+        "role": "admin"
+    }
+
+    missing_token = client.post("/auth/staff/register", json=librarian_body)
+    assert missing_token.status_code == 401
+
+    student_attempt = client.post(
+        "/auth/staff/register",
+        json=librarian_body,
+        headers=student
+    )
+    assert student_attempt.status_code == 403
+
+    librarian_attempt = client.post(
+        "/auth/staff/register",
+        json=librarian_body,
+        headers=librarian
+    )
+    assert librarian_attempt.status_code == 403
+
+    created_librarian = client.post(
+        "/auth/staff/register",
+        json=librarian_body,
+        headers=admin
+    )
+    assert created_librarian.status_code == 201
+    assert created_librarian.json()["role"] == "librarian"
+    assert "password" not in created_librarian.json()
+    assert "hashed_password" not in created_librarian.json()
+
+    created_admin = client.post(
+        "/auth/staff/register",
+        json=admin_body,
+        headers=admin
+    )
+    assert created_admin.status_code == 201
+    assert created_admin.json()["role"] == "admin"
+
+    duplicate = client.post(
+        "/auth/staff/register",
+        json=librarian_body,
+        headers=admin
+    )
+    assert duplicate.status_code == 409
+
+    invalid_role = client.post(
+        "/auth/staff/register",
+        json={**librarian_body, "email": "other@example.com", "role": "student"},
+        headers=admin
+    )
+    assert invalid_role.status_code == 422
+
+    public_student = client.post(
+        "/auth/register",
+        json={
+            "name": "Public Student",
+            "email": "public.student@example.com",
+            "password": "student123",
+            "role": "admin"
+        }
+    )
+    assert public_student.status_code == 201
+    assert public_student.json()["role"] == "student"
+
+
 def test_admin_can_create_and_update_books(client, db):
     add_staff_user(db, "admin", "admin@example.com", name="Library Admin")
     admin = auth_header(login(client, "admin@example.com", "staffpass1"))

@@ -122,6 +122,7 @@ Swagger UI: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 | Method | Path | Who | Result |
 |---|---|---|---|
 | `POST` | `/auth/register` | public | Creates a student. Always role `student`. `201` |
+| `POST` | `/auth/staff/register` | admin | Creates a librarian or admin. Students and librarians receive `403`. `201` |
 | `POST` | `/auth/login` | public | Returns a bearer token. `200` or `401` |
 | `GET` | `/auth/me` | logged-in user | Returns the current profile. `200` or `401` |
 

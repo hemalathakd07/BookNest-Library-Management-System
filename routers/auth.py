@@ -1,11 +1,11 @@
-from dependencies import get_current_user
+from dependencies import get_current_user, require_role
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from database import get_db
 from models import User
-from schemas import UserCreate, UserResponse, UserLogin, TokenResponse
+from schemas import StaffCreate, UserCreate, UserResponse, UserLogin, TokenResponse
 from auth_utils import hash_password, verify_password, create_access_token
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -50,6 +50,48 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
 
     db.refresh(new_user)
 
+    return new_user
+
+
+@router.post(
+    "/staff/register",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED
+)
+def register_staff(
+    staff_data: StaffCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_role("admin"))
+):
+    existing_user = db.query(User).filter(
+        User.email == staff_data.email
+    ).first()
+
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already registered"
+        )
+
+    new_user = User(
+        name=staff_data.name,
+        email=staff_data.email,
+        hashed_password=hash_password(staff_data.password),
+        role=staff_data.role
+    )
+
+    db.add(new_user)
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already registered"
+        )
+
+    db.refresh(new_user)
     return new_user
 
 

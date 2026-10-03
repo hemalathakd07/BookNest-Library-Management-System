@@ -1,5 +1,6 @@
 from datetime import date
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -12,6 +13,13 @@ class UserCreate(BaseModel):
     name: str = Field(min_length=2, max_length=100)
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
+
+
+class StaffCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=100)
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+    role: Literal["librarian", "admin"]
 
 
 class UserLogin(BaseModel):
