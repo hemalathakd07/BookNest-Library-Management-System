@@ -126,13 +126,23 @@ def test_duplicate_isbn_search_update_and_delete(client, db):
     assert updated.json()["available_copies"] == 8
 
     librarian_delete = client.delete(f"/books/{book_id}", headers=librarian)
-    assert librarian_delete.status_code == 403
+    assert librarian_delete.status_code == 204
 
-    deleted = client.delete(f"/books/{book_id}", headers=admin)
-    assert deleted.status_code == 204
+    second = client.post("/books/", json={
+        **BOOK,
+        "isbn": "9781234567891",
+        "title": "Second Book"
+    }, headers=admin)
+    assert second.status_code == 201
+    admin_delete = client.delete(
+        f"/books/{second.json()['id']}",
+        headers=admin
+    )
+    assert admin_delete.status_code == 204
 
     gone = client.get(f"/books/{book_id}")
     assert gone.status_code == 404
+    assert client.get(f"/books/{second.json()['id']}").status_code == 404
 
 
 def test_total_copies_cannot_drop_below_borrowed_count(client, db):
@@ -234,6 +244,22 @@ def test_student_cannot_update_or_delete_and_invalid_tokens_return_401(client, d
     )
     assert expired.status_code == 401
     assert expired.json()["detail"] == "Token has expired"
+
+
+def test_librarian_and_admin_login_and_profile(client, db):
+    add_staff_user(db, "librarian", "librarian@example.com", name="Library Lead")
+    add_staff_user(db, "admin", "admin@example.com", name="Library Admin")
+
+    librarian_token = login(client, "librarian@example.com", "staffpass1")
+    librarian_me = client.get("/auth/me", headers=auth_header(librarian_token))
+    assert librarian_me.status_code == 200
+    assert librarian_me.json()["role"] == "librarian"
+    assert "hashed_password" not in librarian_me.json()
+
+    admin_token = login(client, "admin@example.com", "staffpass1")
+    admin_me = client.get("/auth/me", headers=auth_header(admin_token))
+    assert admin_me.status_code == 200
+    assert admin_me.json()["role"] == "admin"
 
 
 def test_only_admin_can_register_staff(client, db):

@@ -14,7 +14,8 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 @router.post(
     "/register",
     response_model=UserResponse,
-    status_code=status.HTTP_201_CREATED
+    status_code=status.HTTP_201_CREATED,
+    summary="Register a student account"
 )
 def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
 
@@ -56,7 +57,12 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
 @router.post(
     "/staff/register",
     response_model=UserResponse,
-    status_code=status.HTTP_201_CREATED
+    status_code=status.HTTP_201_CREATED,
+    summary="Register a librarian or admin",
+    description=(
+        "Only an authenticated admin can create a librarian or admin. "
+        "The role must be librarian or admin."
+    )
 )
 def register_staff(
     staff_data: StaffCreate,
@@ -95,7 +101,11 @@ def register_staff(
     return new_user
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    summary="Log in as a student, librarian, or admin"
+)
 def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
 
     # Find the user by email
@@ -125,7 +135,11 @@ def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
         "token_type": "bearer"
     }
 
-@router.get("/me", response_model=UserResponse)
+@router.get(
+    "/me",
+    response_model=UserResponse,
+    summary="View the logged-in user's profile"
+)
 def get_my_profile(
     current_user: User = Depends(get_current_user)
 ):

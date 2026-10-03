@@ -237,6 +237,10 @@ def test_admin_can_return_a_student_book(client, db):
         json={"book_id": book["id"]},
         headers=student
     )
+    all_records = client.get("/borrow/", headers=admin)
+    assert all_records.status_code == 200
+    assert len(all_records.json()) == 1
+
     returned = client.post(
         f"/borrow/{borrowed.json()['id']}/return",
         headers=admin

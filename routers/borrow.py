@@ -67,7 +67,8 @@ def _student_can_access_record(current_user: User, record: BorrowRecord) -> bool
 @router.post(
     "/",
     response_model=BorrowRecordResponse,
-    status_code=status.HTTP_201_CREATED
+    status_code=status.HTTP_201_CREATED,
+    summary="Borrow a book as a student"
 )
 def borrow_book(
     borrow_data: BorrowCreate,
@@ -139,7 +140,11 @@ def borrow_book(
     return record
 
 
-@router.get("/my-history", response_model=list[BorrowRecordResponse])
+@router.get(
+    "/my-history",
+    response_model=list[BorrowRecordResponse],
+    summary="View the logged-in user's borrowing history"
+)
 def get_my_borrow_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -151,7 +156,11 @@ def get_my_borrow_history(
     return records
 
 
-@router.get("/", response_model=list[BorrowRecordResponse])
+@router.get(
+    "/",
+    response_model=list[BorrowRecordResponse],
+    summary="View all borrowing records"
+)
 def list_borrow_records(
     db: Session = Depends(get_db),
     _: User = Depends(require_role("librarian", "admin"))
@@ -163,7 +172,11 @@ def list_borrow_records(
     return records
 
 
-@router.get("/{record_id}", response_model=BorrowRecordResponse)
+@router.get(
+    "/{record_id}",
+    response_model=BorrowRecordResponse,
+    summary="View one borrowing record"
+)
 def get_borrow_record(
     record_id: int,
     db: Session = Depends(get_db),
@@ -180,7 +193,11 @@ def get_borrow_record(
     return record
 
 
-@router.post("/{record_id}/return", response_model=BorrowRecordResponse)
+@router.post(
+    "/{record_id}/return",
+    response_model=BorrowRecordResponse,
+    summary="Return a borrowed book"
+)
 def return_book(
     record_id: int,
     db: Session = Depends(get_db),

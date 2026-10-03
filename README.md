@@ -1,22 +1,22 @@
 # BookNest — Digital Library
 
-BookNest is a college capstone API for a small digital library. Students can browse books and borrow or return them. Librarians manage the catalog and can help with returns. Admins can also delete books that have no borrowing history.
+BookNest is a college capstone API for a small digital library. Students can browse books and borrow or return them. Librarians and admins manage the catalog. Admins can also create librarian and admin accounts.
 
 ## Roles
 
 | Role | What this person can do |
 |---|---|
 | Student | View books, borrow a book, return their own book, and view their own history |
-| Librarian | Everything a student can view, plus create and update books, view all borrow records, and return any book |
-| Admin | Everything a librarian can do, plus delete a book that has no borrowing history |
+| Librarian | View books, add, update, and delete books that have no borrow history, view all borrow records, and return any book |
+| Admin | Everything a librarian can do, plus create librarian and admin accounts |
 
-Visitors who are not logged in can view books. They cannot borrow, return, or change the catalog. Librarians cannot delete books. Only students can borrow. Public registration always creates a student.
+Visitors who are not logged in can view books. They cannot borrow, return, or change the catalog. Only students can borrow. A librarian cannot create staff accounts or change anyone's role. Public registration always creates a student.
 
 ## Features
 
 - Student registration and login with hashed passwords and JWT access tokens
 - Role checks for student, librarian, and admin
-- Book catalog with search, availability filter, create, update, and admin delete
+- Book catalog with search, availability filter, create, update, and delete
 - Borrowing with a 14-day loan period, copy tracking, and one active borrow per student per book
 - Returns with overdue fines stored on the borrow record
 - Swagger documentation
@@ -134,7 +134,7 @@ Swagger UI: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 | `GET` | `/books/{book_id}` | public | One book, or `404` |
 | `POST` | `/books/` | librarian, admin | Creates a book. Duplicate ISBN returns `409` |
 | `PATCH` | `/books/{book_id}` | librarian, admin | Updates a book. `404` if missing, `409` for ISBN or copy conflicts |
-| `DELETE` | `/books/{book_id}` | admin | Deletes a book with no borrow history. `204`, `403`, `404`, or `409` |
+| `DELETE` | `/books/{book_id}` | librarian, admin | Deletes a book with no borrow history. `204`, `403`, `404`, or `409` |
 
 Students and visitors can view books. Changing `total_copies` keeps the number of borrowed copies the same. The new total cannot be lower than the number already borrowed.
 
@@ -158,13 +158,15 @@ Borrowing locks the book row on PostgreSQL so two people cannot take the last co
 
 ## Create a staff account
 
-Public registration cannot create a librarian or admin. From the project folder, run:
+Public registration cannot create a librarian or admin. Create the first admin from the project folder:
 
 ```powershell
 .\.venv\Scripts\python.exe create_staff.py
 ```
 
-The script asks for a name, email, hidden password, and role (`librarian` or `admin`). If the email already exists, it asks before changing that account.
+The script asks for a name, email, a hidden password, and the role `admin`. It does not print the password. If that email already belongs to a student, it asks before changing the account. Answer `y` only when you mean to promote that person.
+
+After that admin exists, log in through `POST /auth/login` and use `POST /auth/staff/register` to create more librarians or admins. Students and librarians who call that route receive **403**.
 
 To run it without prompts, set `STAFF_NAME`, `STAFF_EMAIL`, `STAFF_PASSWORD`, and `STAFF_ROLE` in the environment for that command. Add `STAFF_UPDATE_EXISTING=true` only when you intend to change an existing account. Do not put staff passwords in the committed project.
 
@@ -186,5 +188,6 @@ The older `test_*.py` files in the project folder are manual scripts. `pytest` i
 - On PostgreSQL, borrowing and returning lock the book row until the request finishes. That stops two overlapping borrows from taking the last copy. SQLite ignores that lock.
 - Alembic is not configured. `create_tables.py` creates missing tables and does not change rows that already exist.
 - A book with borrowing history cannot be deleted.
-#   B o o k N e s t - L i b r a r y - M a n a g e m e n t - S y s t e m  
+#   B o o k N e s t - L i b r a r y - M a n a g e m e n t - S y s t e m 
+ 
  

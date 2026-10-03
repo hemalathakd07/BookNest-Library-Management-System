@@ -41,7 +41,8 @@ def _get_book_or_404(db: Session, book_id: int) -> Book:
 @router.post(
     "/",
     response_model=BookResponse,
-    status_code=status.HTTP_201_CREATED
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a book"
 )
 def create_book(
     book_data: BookCreate,
@@ -82,7 +83,7 @@ def create_book(
     return new_book
 
 
-@router.get("/", response_model=list[BookResponse])
+@router.get("/", response_model=list[BookResponse], summary="List and search books")
 def get_all_books(
     title: str | None = Query(default=None),
     author: str | None = Query(default=None),
@@ -117,12 +118,12 @@ def get_all_books(
     return query.all()
 
 
-@router.get("/{book_id}", response_model=BookResponse)
+@router.get("/{book_id}", response_model=BookResponse, summary="View one book")
 def get_book(book_id: int, db: Session = Depends(get_db)):
     return _get_book_or_404(db, book_id)
 
 
-@router.patch("/{book_id}", response_model=BookResponse)
+@router.patch("/{book_id}", response_model=BookResponse, summary="Update a book")
 def update_book(
     book_id: int,
     book_data: BookUpdate,
@@ -178,12 +179,13 @@ def update_book(
 
 @router.delete(
     "/{book_id}",
-    status_code=status.HTTP_204_NO_CONTENT
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a book with no borrowing history"
 )
 def delete_book(
     book_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(require_role("admin"))
+    _: User = Depends(require_role("librarian", "admin"))
 ):
     book = _get_book_or_404(db, book_id)
 
